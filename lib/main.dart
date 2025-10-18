@@ -37,14 +37,17 @@ class _ControlScreenState extends State<ControlScreen> {
   @override
   void initState() {
     super.initState();
-    _requestPermissions();
+    // Usar WidgetsBinding para ejecutar después de que el widget esté completamente construido
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestPermissions();
+    });
   }
 
   // Solicitar permisos de Bluetooth
   Future<void> _requestPermissions() async {
     // Mostrar diálogo explicativo
     if (mounted) {
-      showDialog(
+      await showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Permisos necesarios'),
@@ -59,9 +62,6 @@ class _ControlScreenState extends State<ControlScreen> {
       );
     }
 
-    // Esperar un momento
-    await Future.delayed(const Duration(seconds: 1));
-
     // Solicitar permisos
     Map<Permission, PermissionStatus> statuses = await [
       Permission.bluetoothScan,
@@ -72,7 +72,9 @@ class _ControlScreenState extends State<ControlScreen> {
     // Verificar resultados
     if (statuses[Permission.bluetoothConnect]!.isDenied || 
         statuses[Permission.bluetoothScan]!.isDenied) {
-      _showSnackBar('⚠️ Permisos denegados. Ve a Ajustes → Apps → MiniAuto → Permisos');
+      if (mounted) {
+        _showSnackBar('⚠️ Permisos denegados. Ve a Ajustes → Apps → MiniAuto → Permisos');
+      }
       
       // Abrir configuración de la app
       await openAppSettings();
@@ -178,11 +180,13 @@ class _ControlScreenState extends State<ControlScreen> {
           print('Recibido: ${String.fromCharCodes(data)}');
         },
         onDone: () {
-          setState(() {
-            isConnected = false;
-            connection = null;
-          });
-          _showSnackBar('Desconectado');
+          if (mounted) {
+            setState(() {
+              isConnected = false;
+              connection = null;
+            });
+            _showSnackBar('Desconectado');
+          }
         },
       );
       
@@ -208,9 +212,11 @@ class _ControlScreenState extends State<ControlScreen> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+      );
+    }
   }
 
   @override
